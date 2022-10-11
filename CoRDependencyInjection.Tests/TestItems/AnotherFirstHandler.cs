@@ -14,7 +14,7 @@ namespace CoRDependencyInjection.Tests.TestItems
             _singleton = singleton;
         }
 
-        public Type Handle()
+        public override Type Handle()
         {
             return base.Handle();
         }
