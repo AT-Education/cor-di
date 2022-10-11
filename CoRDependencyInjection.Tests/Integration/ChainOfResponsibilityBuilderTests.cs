@@ -3,6 +3,7 @@ using CoRDependencyInjection.Exceptions;
 using CoRDependencyInjection.Tests.TestItems;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
+using FluentAssertions.Execution;
 
 namespace CoRDependencyInjection.Tests.Integration
 {
@@ -51,10 +52,12 @@ namespace CoRDependencyInjection.Tests.Integration
             var singleton = new TestSingleton();
             singleton.Guid = Guid.NewGuid().ToString();
 
-            _builder.WithHandler<FirstHandler>()
+            _builder
+                .WithHandler<FirstHandler>()
                 .WithHandler<SecondHandler>()
-                .WithHandler<EmptyConstructorHandler>().BuildChain()
-                .AddSingleton(singleton);
+                .WithHandler<EmptyConstructorHandler>()
+                .BuildChain()
+            .AddSingleton(singleton);
 
             IServiceProvider serviceProvider = _services.BuildServiceProvider();
 
@@ -63,6 +66,31 @@ namespace CoRDependencyInjection.Tests.Integration
 
             Assert.Equal(typeof(SecondHandler), firstHandler.Handle());
             Assert.Equal(singleton.Guid, ((FirstHandler) firstHandler).GetSingleton().Guid);
+        }
+
+        [Fact]
+        public void BuildChain_Success_WhenUsingAbstractBaseClass()
+        {
+            var singleton = new TestSingleton();
+            singleton.Guid = Guid.NewGuid().ToString();
+
+            _builder
+                .WithHandler<AnotherFirstHandler>()
+                .WithHandler<AnotherSecondHandler>()
+                .WithHandler<AnotherThirdHandler>()
+                .BuildChain()
+            .AddSingleton(singleton);
+
+            IServiceProvider serviceProvider = _services.BuildServiceProvider();
+
+            var scope = serviceProvider.CreateScope();
+            var firstHandler = scope.ServiceProvider.GetRequiredService<ITestChain>();
+
+            using (new AssertionScope())
+            {
+                Assert.Equal(typeof(SecondHandler), firstHandler.Handle());
+                Assert.Equal(singleton.Guid, ((FirstHandler) firstHandler).GetSingleton().Guid);
+            }
         }
     }
 }
